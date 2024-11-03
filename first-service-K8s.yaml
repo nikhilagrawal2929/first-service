@@ -1,0 +1,80 @@
+# Define the kind of Kubernetes resource - Deployment for app
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: first-service-deployment  # Name of the deployment
+spec:
+  replicas: 2  # Number of instances/pods to run
+  selector:
+    matchLabels:
+      app: first-service  # Label to identify this application
+  template:
+    metadata:
+      labels:
+        app: first-service  # Label for selecting the pod
+    spec:
+      containers:
+        - name: first-service  # Name of the container
+          image: nikhilagrawal01/first-service  # Docker image for the application
+          ports:
+            - containerPort: 8089  # Expose container's port
+          env:
+            - name: SPRING_REDIS_HOST
+              value: "redis"  # Connects to Redis service in Kubernetes
+            - name: SPRING_REDIS_PORT
+              value: "6379"  # Redis port
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:h2:file:/opt/h2-data/testdb;DB_CLOSE_ON_EXIT=FALSE"
+            - name: SPRING_H2_CONSOLE_SETTINGS_WEB_ALLOW_OTHERS
+              value: "true"  # Enable access to H2 console
+          livenessProbe:
+            httpGet:
+              path: /actuator/health  # Health check endpoint
+              port: 8089
+            initialDelaySeconds: 75
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health  # Health check endpoint
+              port: 8089
+            initialDelaySeconds: 75
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+---
+# Service to expose the first-service deployment
+apiVersion: v1
+kind: Service
+metadata:
+  name: first-service
+spec:
+  selector:
+    app: first-service  # Connects to first-service pods
+  ports:
+    - port: 8089  # Port accessible from outside
+      targetPort: 8089  # Maps to the app's internal port
+  type: NodePort  # Change to NodePort if needed
+
+---
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2  # Make sure this is set to autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: first-service-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: first-service-deployment
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 10

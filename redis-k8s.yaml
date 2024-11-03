@@ -1,0 +1,35 @@
+# Define the kind of Kubernetes resource - Deployment for Redis
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-deployment  # Name of the deployment
+spec:
+  replicas: 1  # Only one instance of Redis
+  selector:
+    matchLabels:
+      app: redis  # Label to identify Redis pod
+  template:
+    metadata:
+      labels:
+        app: redis  # Label for the pod selector
+    spec:
+      containers:
+        - name: redis  # Name of the container
+          image: redis:7-alpine  # Image for Redis with alpine version 7
+          ports:
+            - containerPort: 6379  # Port Redis listens on
+
+---
+# Service to expose the Redis deployment
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  selector:
+    app: redis  # Connects to Redis pods
+  ports:
+    - protocol: TCP
+      port: 6379  # Port accessible within the cluster
+      targetPort: 6379  # Maps to Redis's internal port
+  type: ClusterIP  # Exposes Redis internally in the Kubernetes cluster

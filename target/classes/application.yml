@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: first-service
+  cache:
+    type: ${redis}
+    redis:
+      host: ${redis}
+      port: ${SPRING_REDIS_PORT}
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  datasource:
+    url: jdbc:h2:file:/opt/h2-data/testdb;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+    hikari:
+      data-source-properties:
+        webAllowOthers: true
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    database-platform: org.hibernate.dialect.H2Dialect
+  batch:
+    initialize-schema: always
+    job:
+      enabled: false
+server:
+  port: 8089
+
+
+logging:
+  level:
+    org.springframework.cache: ERROR
+    com.yourpackage: ERROR
+resilience4j:
+  circuitbreaker:
+    instances:
+      yourService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000ms
+        permittedNumberOfCallsInHalfOpenState: 3
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+

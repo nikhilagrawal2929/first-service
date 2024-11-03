@@ -1,0 +1,45 @@
+# H2 Database Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: h2-database
+spec:
+  replicas: 1  # Only one instance of H2
+  selector:
+    matchLabels:
+      app: h2-database
+  template:
+    metadata:
+      labels:
+        app: h2-database
+    spec:
+      containers:
+        - name: h2
+          image: oscarfonts/h2  # H2 Docker image
+          ports:
+            - containerPort: 1521  # Default port for H2
+          env:
+            - name: H2_OPTIONS
+              value: "-tcp -tcpAllowOthers"  # Allow connections from other hosts
+          volumeMounts:
+            - name: h2-data
+              mountPath: /opt/h2-data  # Directory to persist H2 data
+      volumes:
+        - name: h2-data
+          persistentVolumeClaim:
+            claimName: h2-data-pvc  # Ensure you have a PVC created
+
+---
+# H2 Database Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: h2-database
+spec:
+  selector:
+    app: h2-database
+  ports:
+    - protocol: TCP
+      port: 1521  # Expose H2 on this port
+      targetPort: 1521  # Target port in the pod
+  type: ClusterIP  # Accessible within the cluster
